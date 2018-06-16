@@ -198,11 +198,13 @@ case "${sim_type}" in
   *) fail "Unsupported sim-type: ${sim_type}" ;;
 esac
 
+if [ "${LOKOLE_WIFI}" != "no" ]; then
 case "${opwen_device}" in
   OrangePI|orangepizero) ht_capab='[HT40][DSS_CCK-40]' ;;
   raspberrypi) ht_capab='[HT40][SHORT-GI-20][DSS_CCK-40]' ;;
   *) fail "Unsupported device: ${opwen_device}" ;;
 esac
+fi
 
 opwen_webapp_config_client_domain="${opwen_webapp_config_client_name}.lokole.ca"
 opwen_webapp_config_client_id="$(random_string 32)"
@@ -386,6 +388,7 @@ max_workers=4
 opwen_webapp_timeout_seconds=300
 opwen_webapp_workers=$(min $(($(get_system_ram_kb) / memory_per_worker_kb)) ${max_workers})
 opwen_webapp_socket="${opwen_webapp_run_directory}/nginx_gunicorn.sock"
+opwen_webapp_log_level="error"
 nginx_access_log="${opwen_webapp_run_directory}/nginx_access.log"
 nginx_error_log="${opwen_webapp_run_directory}/nginx_error.log"
 
@@ -394,10 +397,11 @@ write_file "${opwen_webapp_script}" << EOF
 #!/usr/bin/env sh
 . '${opwen_webapp_envs}'
 
-'${opwen_webapp_virtualenv}/bin/gunicorn' \
-  --timeout='${opwen_webapp_timeout_seconds}' \
-  --workers='${opwen_webapp_workers}' \
-  --bind='unix:${opwen_webapp_socket}' \
+'${opwen_webapp_virtualenv}/bin/gunicorn' \\
+  --timeout='${opwen_webapp_timeout_seconds}' \\
+  --workers='${opwen_webapp_workers}' \\
+  --bind='unix:${opwen_webapp_socket}' \\
+  --log-level='${opwen_webapp_log_level}' \\
   '${opwen_webapp_service}.webapp:app'
 EOF
 make_executable "${opwen_webapp_script}"
